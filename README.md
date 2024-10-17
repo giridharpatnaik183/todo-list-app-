@@ -417,3 +417,103 @@ git push origin main
 ### **🚀 Success!**  
 You now have a **full-stack to-do list application** with a MongoDB database! 🎉
 
+---
+
+### 🌟 **Day 3: Dockerization and Preparation for Deployment** 🚀
+
+Let’s make your to-do list app portable by containerizing it with Docker! 🐳
+
+---
+
+### 1️⃣ **Create a Dockerfile** 📄
+
+Add the following content to your `Dockerfile` in the root directory:
+
+```dockerfile
+# To-Do List Dockerfile
+FROM node:14
+
+WORKDIR /app
+
+COPY package*.json ./
+
+RUN npm install
+
+COPY . .
+
+EXPOSE 5000
+
+CMD ["npm", "start"]
+```
+
+---
+
+### 2️⃣ **Create a .dockerignore File** 🚫
+
+Prevent unnecessary files from being added to the Docker image. Create a `.dockerignore` file:
+
+```bash
+# .dockerignore
+node_modules
+npm-debug.log
+```
+
+---
+
+### 3️⃣ **Create a docker-compose.yml File** 📦
+
+Add this to the `docker-compose.yml` to orchestrate your Node.js app and MongoDB services:
+
+```yaml
+# To-Do List Docker Compose
+version: '3'
+services:
+  app:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      - MONGODB_URI=mongodb://mongo:27017/todo-list
+    depends_on:
+      - mongo
+  mongo:
+    image: mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+
+volumes:
+  mongo-data:
+```
+
+---
+
+### 4️⃣ **Build and Run Your Docker Containers** 🏗️
+
+Open your terminal and run the following command to build and start your containers:
+
+```bash
+docker-compose up --build
+```
+
+This will:  
+⚙️ Build the Node.js app and MongoDB containers.  
+🔄 Map ports `5000` and `27017` from the containers to your host machine.
+
+---
+
+### 5️⃣ **Commit and Push Changes to GitHub** 📂
+
+Keep everything organized by committing the changes:
+
+```bash
+git add Dockerfile .dockerignore docker-compose.yml
+git commit -m "Add Docker configuration"
+git push origin main
+```
+
+---
+
+🎉 **Now your application is Dockerized!** Ready to run anywhere with just a few commands! 🐳 
+
