@@ -77,51 +77,56 @@
     </div>
 
     <script>
-        // 🎯 Getting DOM elements
+        const apiUrl = 'http://localhost:5000/api/todos'; // 🛠️ Backend API URL
+    
         const form = document.getElementById('todo-form');
         const input = document.getElementById('todo-input');
         const todoList = document.getElementById('todo-list');
-
-        // 🛠️ Event listener for adding a new task
-        form.addEventListener('submit', (e) => {
-            e.preventDefault(); // Prevents page refresh
-            addTodo();
+    
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const newTodo = { text: input.value };
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newTodo),
+            });
+            const todo = await response.json();
+            renderTodo(todo);
+            input.value = '';
         });
-
-        // ➕ Function to add a new task to the list
-        function addTodo() {
-            if (input.value.trim() === '') return; // Ignore empty input
-
-            const li = document.createElement('li'); // Create list item
-            li.className = 'todo-item'; // Add class for styling
+    
+        async function fetchTodos() {
+            const response = await fetch(apiUrl);
+            const todos = await response.json();
+            todos.forEach(renderTodo);
+        }
+    
+        function renderTodo(todo) {
+            const li = document.createElement('li');
+            li.className = 'todo-item';
             li.innerHTML = `
-                <input type="checkbox">
-                <span>${input.value}</span>
+                <input type="checkbox" ${todo.completed ? 'checked' : ''}>
+                <span>${todo.text}</span>
                 <span class="delete">&times;</span>
             `;
-
-            // Toggle task completion
-            li.querySelector('input').addEventListener('change', toggleTodo);
-
-            // 🗑️ Delete task on click
-            li.querySelector('.delete').addEventListener('click', deleteTodo);
-
-            // Add the new task to the list
+    
+            li.querySelector('input').addEventListener('change', async () => {
+                await fetch(`${apiUrl}/${todo._id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ completed: !todo.completed }),
+                });
+            });
+    
+            li.querySelector('.delete').addEventListener('click', async () => {
+                await fetch(`${apiUrl}/${todo._id}`, { method: 'DELETE' });
+                li.remove();
+            });
             todoList.appendChild(li);
-            input.value = ''; // Clear input field
         }
-
-        // ✅ Function to mark a task as completed
-        function toggleTodo(e) {
-            const todoItem = e.target.closest('.todo-item');
-            todoItem.classList.toggle('completed'); // Toggle 'completed' class
-        }
-
-        // 🗑️ Function to delete a task from the list
-        function deleteTodo(e) {
-            const todoItem = e.target.closest('.todo-item');
-            todoItem.remove(); // Remove task from the list
-        }
+    
+        fetchTodos(); // 📝 Fetch existing todos on page load
     </script>
 </body>
 </html>
