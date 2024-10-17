@@ -517,3 +517,184 @@ git push origin main
 
 🎉 **Now your application is Dockerized!** Ready to run anywhere with just a few commands! 🐳 
 
+---
+
+### 🌟 **Day 4: Deployment to AWS** ☁️
+
+Let’s take your Dockerized to-do list app and deploy it on **AWS** using **ECS** and an **Application Load Balancer**! 🚀
+
+---
+
+### 1️⃣ **Sign Up for an AWS Account** 🆕 
+
+If you haven't done so already, sign up for an [AWS account](https://aws.amazon.com/).
+
+---
+
+### 2️⃣ **Install the AWS CLI** 💻
+
+Make sure you have the **AWS CLI** installed. Configure it with your AWS credentials:
+
+```bash
+aws configure
+```
+
+---
+
+### 3️⃣ **Create an ECR Repository** 📦
+
+Run the following command to create a repository for your Docker image:
+
+```bash
+aws ecr create-repository --repository-name todo-list-app
+```
+
+---
+
+### 4️⃣ **Build and Push Your Docker Image to ECR** 📤
+
+Authenticate Docker to your ECR registry:
+
+```bash
+aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin <your-account-id>.dkr.ecr.us-east-1.amazonaws.com
+```
+
+Next, build your Docker image:
+
+```bash
+docker build -t todo-list-app .
+```
+
+Tag the image for ECR:
+
+```bash
+docker tag todo-list-app:latest <your-account-id>.dkr.ecr.us-east-1.amazonaws.com/todo-list-app:latest
+```
+
+Finally, push the image to your ECR repository:
+
+```bash
+docker push <your-account-id>.dkr.ecr.us-east-1.amazonaws.com/todo-list-app:latest
+```
+
+---
+
+### 5️⃣ **Create an ECS Cluster** 🌐
+
+Create an ECS cluster to run your application:
+
+```bash
+aws ecs create-cluster --cluster-name todo-list-cluster
+```
+
+---
+
+### 6️⃣ **Create a Task Definition** 📜
+
+Create a `task-definition.json` file with the following content:
+
+```json
+{
+  "family": "todo-list-task",
+  "containerDefinitions": [
+    {
+      "name": "todo-list-app",
+      "image": "<your-account-id>.dkr.ecr.us-east-1.amazonaws.com/todo-list-app:latest",
+      "portMappings": [
+        {
+          "containerPort": 5000,
+          "hostPort": 5000,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        {
+          "name": "MONGODB_URI",
+          "value": "mongodb://<your-mongodb-url>:27017/todo-list"
+        }
+      ],
+      "essential": true,
+      "memory": 512,
+      "cpu": 256
+    }
+  ],
+  "requiresCompatibilities": [
+    "FARGATE"
+  ],
+  "networkMode": "awsvpc",
+  "memory": "512",
+  "cpu": "256"
+}
+```
+
+---
+
+### 7️⃣ **Register the Task Definition** ✔️
+
+Register your task definition with ECS:
+
+```bash
+aws ecs register-task-definition --cli-input-json file://task-definition.json
+```
+
+---
+
+### 8️⃣ **Create an ECS Service** ⚙️
+
+Create a service to run your task:
+
+```bash
+aws ecs create-service --cluster todo-list-cluster --service-name todo-list-service --task-definition todo-list-task:1 --desired-count 1 --launch-type FARGATE --network-configuration "awsvpcConfiguration={subnets=[<subnet-id>],securityGroups=[<security-group-id>],assignPublicIp=ENABLED}"
+```
+
+**🔄 Replace `<subnet-id>` and `<security-group-id>`** with your VPC configuration values.
+
+---
+
+### 9️⃣ **Set Up an Application Load Balancer (ALB)** ⚖️
+
+1. Go to the **EC2 dashboard** in the AWS console.
+2. Create a new **Application Load Balancer**.
+3. Configure listeners and routing to your ECS service.
+
+---
+
+### 🔟 **Update Your ECS Service to Use the ALB** 🔄
+
+Link your ECS service to the ALB:
+
+```bash
+aws ecs update-service --cluster todo-list-cluster --service todo-list-service --load-balancers "targetGroupArn=<target-group-arn>,containerName=todo-list-app,containerPort=5000"
+```
+
+**🔄 Replace `<target-group-arn>`** with the ARN of the target group you created for your ALB.
+
+---
+
+### 1️⃣1️⃣ **Update Your Frontend Configuration** ⚙️
+
+Update the `index.html` in your frontend code to use the ALB URL instead of localhost:
+
+```javascript
+// Replace
+const API_URL = 'http://localhost:5000/api'; 
+// With
+const API_URL = 'http://<your-alb-url>/api';
+```
+
+---
+
+### 1️⃣2️⃣ **Commit and Push Your Changes** 📂
+
+Keep your repository up to date by committing the changes:
+
+```bash
+git add task-definition.json index.html
+git commit -m "Update configuration for AWS deployment"
+git push origin main
+```
+
+---
+
+🎉 **Congratulations! Your application is now deployed on AWS using ECS** and can be accessed through the Application Load Balancer URL! 🌐✨
+
