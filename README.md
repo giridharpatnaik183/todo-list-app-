@@ -191,3 +191,229 @@ git push origin main
 
 ### 🎉 Congratulations!  
 You now have a **beautiful frontend** for your **to-do list application**! 
+
+
+---
+
+# 🚀 Day 2: Backend Development and Database Setup
+
+### **1️⃣ Initialize Node.js Project:**
+
+```bash
+npm init -y
+```
+> 🎯 This command creates a `package.json` file to manage your project dependencies.
+
+---
+
+### **2️⃣ Install Required Dependencies:**
+
+```bash
+npm install express cors mongoose dotenv
+npm install --save-dev nodemon
+```
+
+- **Express**: Handles HTTP requests and routing. 🛤️  
+- **CORS**: Allows cross-origin requests (from frontend to backend). 🌐  
+- **Mongoose**: Connects MongoDB with Node.js via schema-based models. 🗃️  
+- **dotenv**: Manages environment variables securely. 🛡️  
+- **Nodemon** (dev dependency): Auto-restarts the server when files change. 🔄
+
+---
+
+### **3️⃣ Create `.env` File to Store Environment Variables:**  
+_(In the root directory)_  
+
+```env
+MONGODB_URI=mongodb://localhost:27017/todo-list
+PORT=5000
+```
+> 🛡️ This helps manage sensitive data like the database URI and port number.
+
+---
+
+### **4️⃣ Backend Code – Create `server.js`:**  
+
+Create a **`server.js`** file in the root directory, and paste the following code:
+
+```javascript
+const express = require('express'); // 🌐 Express setup
+const mongoose = require('mongoose'); // 🗃️ MongoDB connection
+const cors = require('cors'); // 🌍 Allow cross-origin requests
+require('dotenv').config(); // 🔒 Manage environment variables
+
+const app = express();
+const port = process.env.PORT || 5000;
+
+app.use(cors()); // 🌐 Allow frontend-backend communication
+app.use(express.json()); // 📝 Parse incoming JSON requests
+
+// 🔌 Connect to MongoDB using Mongoose
+mongoose.connect(process.env.MONGODB_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+});
+
+// 📋 Define the Todo schema and model
+const todoSchema = new mongoose.Schema({
+  text: String,
+  completed: Boolean,
+});
+
+const Todo = mongoose.model('Todo', todoSchema);
+
+// 🚀 API Endpoints
+
+// 📝 GET: Fetch all todos
+app.get('/api/todos', async (req, res) => {
+  const todos = await Todo.find();
+  res.json(todos);
+});
+
+// ➕ POST: Add a new todo
+app.post('/api/todos', async (req, res) => {
+  const newTodo = new Todo({
+    text: req.body.text,
+    completed: false,
+  });
+  await newTodo.save();
+  res.json(newTodo);
+});
+
+// ✅ PUT: Update a todo's status
+app.put('/api/todos/:id', async (req, res) => {
+  const todo = await Todo.findById(req.params.id);
+  todo.completed = req.body.completed;
+  await todo.save();
+  res.json(todo);
+});
+
+// ❌ DELETE: Remove a todo
+app.delete('/api/todos/:id', async (req, res) => {
+  await Todo.findByIdAndDelete(req.params.id);
+  res.json({ message: 'Todo deleted' });
+});
+
+// 🔊 Start the server
+app.listen(port, () => {
+  console.log(`🚀 Server is running on port ${port}`);
+});
+```
+
+---
+
+### **5️⃣ Update `package.json` with Start Scripts:**  
+
+Modify your `package.json` file to add the following scripts:  
+
+```json
+"scripts": {
+  "start": "node server.js",
+  "dev": "nodemon server.js"
+}
+```
+
+- **`start`**: Starts the server using Node.js. 🚀  
+- **`dev`**: Uses `nodemon` to restart the server on file changes. 🔄  
+
+---
+
+### **6️⃣ Install MongoDB:**  
+
+Make sure you have **MongoDB** installed and running. If not, you can:  
+- **Install MongoDB locally**: [Official MongoDB Installation](https://www.mongodb.com/docs/manual/installation/) 🛠️  
+- **Use MongoDB Atlas** (Cloud solution): [Set up MongoDB Atlas](https://www.mongodb.com/cloud/atlas) ☁️  
+
+---
+
+### **7️⃣ Update Frontend to Connect with Backend:**  
+
+Make some small changes in your **`index.html`** to interact with the backend API:
+
+```html
+<script>
+    const apiUrl = 'http://localhost:5000/api/todos'; // 🛠️ Backend API URL
+
+    const form = document.getElementById('todo-form');
+    const input = document.getElementById('todo-input');
+    const todoList = document.getElementById('todo-list');
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const newTodo = { text: input.value };
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newTodo),
+        });
+        const todo = await response.json();
+        renderTodo(todo);
+        input.value = '';
+    });
+
+    async function fetchTodos() {
+        const response = await fetch(apiUrl);
+        const todos = await response.json();
+        todos.forEach(renderTodo);
+    }
+
+    function renderTodo(todo) {
+        const li = document.createElement('li');
+        li.className = 'todo-item';
+        li.innerHTML = `
+            <input type="checkbox" ${todo.completed ? 'checked' : ''}>
+            <span>${todo.text}</span>
+            <span class="delete">&times;</span>
+        `;
+
+        li.querySelector('input').addEventListener('change', async () => {
+            await fetch(`${apiUrl}/${todo._id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ completed: !todo.completed }),
+            });
+        });
+
+        li.querySelector('.delete').addEventListener('click', async () => {
+            await fetch(`${apiUrl}/${todo._id}`, { method: 'DELETE' });
+            li.remove();
+        });
+
+        todoList.appendChild(li);
+    }
+
+    fetchTodos(); // 📝 Fetch existing todos on page load
+</script>
+```
+
+---
+
+### **8️⃣ Commit and Push Your Changes:**  
+
+```bash
+git add server.js package.json package-lock.json index.html .env
+git commit -m "✨ Add backend API and update frontend to interact with API"
+git push origin main
+```
+
+---
+
+### **9️⃣ Verify Everything Works:**  
+
+1. Start MongoDB locally:
+   ```bash
+   mongod
+   ```
+
+2. Start the backend server:
+   ```bash
+   npm run dev
+   ```
+
+3. Open **`index.html`** in your browser and try adding, updating, and deleting tasks. 🎯
+
+---
+
+### **🚀 Success!**  
+You now have a **full-stack to-do list application** with a MongoDB database! 🎉
+
