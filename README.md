@@ -417,6 +417,7 @@ git push origin main
 ### **🚀 Success!**  
 You now have a **full-stack to-do list application** with a MongoDB database! 🎉
 
+<<<<<<< HEAD
 ---
 
 ### 🌟 **Day 3: Dockerization and Preparation for Deployment** 🚀
@@ -517,3 +518,5 @@ git push origin main
 
 🎉 **Now your application is Dockerized!** Ready to run anywhere with just a few commands! 🐳 
 
+=======
+>>>>>>> b443f53 (Moved project to todo_list_app folder)
