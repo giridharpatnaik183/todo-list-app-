@@ -698,3 +698,168 @@ git push origin main
 
 🎉 **Congratulations! Your application is now deployed on AWS using ECS** and can be accessed through the Application Load Balancer URL! 🌐✨
 
+### 🚀 **Day 5: Setting Up CI/CD with Jenkins** 🔧
+
+Today, we’ll set up a **Continuous Integration/Continuous Deployment (CI/CD)** pipeline for your to-do list application using **Jenkins**. This will automate the building, pushing, and deployment of your application to **AWS**! 🌐✨
+
+---
+
+### 1️⃣ **Set Up a Jenkins Server** 🖥️
+
+1. **Launch an EC2 Instance**:
+   - Log in to your AWS console and launch a new EC2 instance. Choose an appropriate instance type (e.g., t2.micro for testing).
+
+2. **Install Jenkins**:
+   - SSH into your EC2 instance and run the following commands to install Jenkins:
+
+   ```bash
+   sudo apt update
+   sudo apt install openjdk-11-jdk
+   sudo apt install wget
+   wget -q -O - https://pkg.jenkins.io/debian/jenkins.io.key | sudo apt-key add -
+   sudo sh -c 'echo deb http://pkg.jenkins.io/debian-stable binary/ > /etc/apt/sources.list.d/jenkins.list'
+   sudo apt update
+   sudo apt install jenkins
+   ```
+
+3. **Start Jenkins**:
+   - Start the Jenkins service:
+
+   ```bash
+   sudo systemctl start jenkins
+   ```
+
+4. **Configure Security Groups**:
+   - Modify the security group of your EC2 instance to allow incoming traffic on **port 8080** (the default Jenkins port).
+
+---
+
+### 2️⃣ **Install Necessary Jenkins Plugins** 🔌
+
+1. Go to the **Jenkins dashboard**.
+2. Click on **Manage Jenkins** → **Manage Plugins**.
+3. Install the following plugins:
+   - **AWS CLI**
+   - **Docker**
+   - **Pipeline**
+   - **GitHub Integration**
+
+---
+
+### 3️⃣ **Create a Jenkinsfile** 📝
+
+In your project root, create a file named `Jenkinsfile` with the following content:
+
+```groovy
+pipeline {
+    agent any
+
+    environment {
+        AWS_ACCOUNT_ID = credentials('aws-account-id')
+        AWS_DEFAULT_REGION = 'us-east-1'
+        IMAGE_REPO_NAME = 'todo-list-app'
+        IMAGE_TAG = 'latest'
+        REPOSITORY_URI = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${IMAGE_REPO_NAME}"
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Build image') {
+            steps {
+                script {
+                    docker.build("${IMAGE_REPO_NAME}:${IMAGE_TAG}")
+                }
+            }
+        }
+
+        stage('Push image') {
+            steps {
+                script {
+                    sh "aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${REPOSITORY_URI}"
+                    sh "docker tag ${IMAGE_REPO_NAME}:${IMAGE_TAG} ${REPOSITORY_URI}:${IMAGE_TAG}"
+                    sh "docker push ${REPOSITORY_URI}:${IMAGE_TAG}"
+                }
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                script {
+                    sh "aws ecs update-service --cluster todo-list-cluster --service todo-list-service --force-new-deployment"
+                }
+            }
+        }
+    }
+}
+```
+
+---
+
+### 4️⃣ **Create a New Pipeline Job in Jenkins** 🎢
+
+1. Go to the **Jenkins dashboard**.
+2. Click **New Item**.
+3. Choose **Pipeline** and give it a name.
+4. In the **Pipeline** section, choose **Pipeline script from SCM**.
+5. Set **SCM** to **Git** and provide your repository URL.
+6. Set the **Script Path** to `Jenkinsfile`.
+
+---
+
+### 5️⃣ **Configure GitHub Webhook** 🔗
+
+1. Go to your **GitHub repository settings**.
+2. Click on **Webhooks**.
+3. Add a new webhook with the URL: 
+   ```
+   http://<your-jenkins-url>/github-webhook/
+   ```
+4. Choose **Send me everything** for events.
+
+---
+
+### 6️⃣ **Commit and Push Your Changes** 💾
+
+Keep your repository up to date by committing the changes:
+
+```bash
+git add Jenkinsfile
+git commit -m "Add Jenkinsfile for CI/CD"
+git push origin main
+```
+
+---
+
+### 🎉 **Congratulations!** 🎉
+
+Now, every time you push changes to your **main branch**, Jenkins will automatically build, push, and deploy your updated application to AWS! 🌟
+
+---
+
+### 🚀 **Future Ideas for Your Project** 📈
+
+Here are some ideas to further enhance your to-do list application:
+
+- **Implement User Authentication** 🔒
+- **Add Unit and Integration Tests** 🧪
+- **Set Up Monitoring and Logging** with tools like **Prometheus** and **ELK stack** 📊
+- **Explore Kubernetes** for container orchestration 🐳
+- **Implement Infrastructure as Code** using **Terraform** or **CloudFormation** 📜
+
+---
+
+### 🔒 **Best Practices Reminder** ⚠️
+
+Always follow best practices for security, such as:
+
+- **Don’t commit sensitive information** like API keys or passwords to your repository.
+- Use **environment variables** or **AWS Secrets Manager** for managing sensitive data.
+
+---
+
+Happy coding! 🎉
